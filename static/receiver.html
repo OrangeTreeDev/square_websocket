@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="接收控制器的指令，可以同步控制器上发生的用户交互行为">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Receiver</title>
+  <style>
+    #app {
+      text-align: center;
+    }
+    #blocks {
+      margin: auto;
+      width: 310px;
+      height: 310px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-content: space-between;
+      border: 1px solid black;
+      background-color: white;
+    }
+    .block {
+      display: block;
+      width: 100px;
+      height: 100px;
+      background-color: rgba(255, 0, 0, 1);
+    }
+
+    .block.taped {
+      background-color: rgba(255, 0, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="blocks">
+      <a class="block" data-index="1"></a>
+      <a class="block" data-index="2"></a>
+      <a class="block" data-index="3"></a>
+      <a class="block" data-index="4"></a>
+      <a class="block" data-index="5"></a>
+      <a class="block" data-index="6"></a>
+      <a class="block" data-index="7"></a>
+      <a class="block" data-index="8"></a>
+      <a class="block" data-index="9"></a>
+    </div>
+    <p>
+      扫描，就可以随意操控我！
+    </p>
+  </div>
+  <script>
+    var container = document.getElementById('app');
+    var blocks = document.getElementById('blocks');
+    var ws = new WebSocket('ws://localhost:3000');
+    ws.addEventListener('open', function(event) {
+      // 请求获取connectionId
+      var requestData = {
+        url: '/api/getConnectionId'
+      }
+      ws.send(JSON.stringify(requestData));
+    });
+    ws.addEventListener('message', function(event) {
+      var responseData = JSON.parse(event.data);
+
+      if (responseData.url === '/api/getConnectionId') {
+        
+        // 读取connectionId，并拼接url
+        var ip = '192.168.191.1';
+        var port = '3002';
+        var url = 'http://' + ip + ':' + port + '/controller.html?diviceid=' + responseData.data.connectionId;
+        url = encodeURIComponent(url);
+
+        // 使用免费接口生成二维码图片
+        var qrcodeImg = document.createElement('img');
+        var src = 'http://qr.liantu.com/api.php?text=' + url;
+        
+        // 二维码图片插入文档
+        qrcodeImg.setAttribute('src', src);
+        qrcodeImg.style.width = '200px';
+        qrcodeImg.style.height = '200px';
+        container.appendChild(qrcodeImg);
+      } else if (responseData.url === '/api/control') {
+        // 对控制方作出响应
+        var idx = responseData.data.index;
+        var block = blocks.querySelector('a[data-index="' + idx + '"]');
+
+        // js分发事件
+        commonTrigger(block, 'click');
+      }
+    });
+
+    /**
+     * @description 触发元素el的type事件
+    */
+    function commonTrigger(el, type) {
+      var evt = document.createEvent("MouseEvents");
+      evt.initMouseEvent(type, true, true);
+      el.dispatchEvent(evt);
+    }
+
+    // 监听block的click事件，实现点击css效果
+    blocks.addEventListener('click', function(event) {
+      event.target.className = event.target.className + ' taped';
+      setTimeout(function() {
+        event.target.className = 'block';
+      }, 500);
+    });
+  </script>
+</body>
+</html>

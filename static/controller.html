@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    div {
+      position: absolute;
+      left: 50%;
+      top: 30%;
+      transform: translate(-50%, -50%);
+      width: 310px;
+      height: 310px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-content: space-between;
+      border: 1px solid black;
+      background-color: white;
+    }
+    a {
+      display: block;
+      width: 100px;
+      height: 100px;
+      background-color: rgba(255, 0, 0, 1);
+    }
+
+    a:active {
+      background-color: rgba(255, 0, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div id="blocks">
+    <a data-index="1"></a>
+    <a data-index="2"></a>
+    <a data-index="3"></a>
+    <a data-index="4"></a>
+    <a data-index="5"></a>
+    <a data-index="6"></a>
+    <a data-index="7"></a>
+    <a data-index="8"></a>
+    <a data-index="9"></a>
+  </div>
+</body>
+<script>
+  var receiverId = location.search.substr(1).split('=')[1];
+  var blocks = document.getElementById('blocks');
+  var websocket = new WebSocket('ws://192.168.191.1:3000');
+  websocket.addEventListener('open', function() {
+    // 注册监听block的click事件
+    blockClickHandler = blocks.addEventListener('click', function(event) {
+      var idx = event.target.getAttribute('data-index');
+      if(idx) {
+        var requestData = {
+          url: '/api/control',
+          data: {
+            receiverId: receiverId,
+            index: idx,
+          }
+        };
+        // 发送点击的位置给websocket服务器
+        websocket.send(JSON.stringify(requestData));
+      }
+    });
+  });
+  websocket.addEventListener('close', function() {
+    // 取消监听block的click事件
+    blocks.removeEventListener('click', blockClickHandler);
+  });
+</script>
+</html>
